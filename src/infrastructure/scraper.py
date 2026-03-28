@@ -74,7 +74,16 @@ class PlaywrightScraper(ScraperPort):
                     viewport={"width": 1280, "height": 720}
                 )
                 await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                await page.wait_for_selector("table", timeout=60000)
+                try:
+                    await page.wait_for_selector("table", timeout=60000)
+                except Exception as e:
+                    page_title = await page.title()
+                    text_content = await page.evaluate("document.body.innerText")
+                    preview = text_content[:200].replace('\n', ' ') if text_content else ''
+                    raise ScrapingError(
+                        f"Timeout menunggu tabel. Judul: '{page_title}'. "
+                        f"Isi: '{preview}'. Kemungkinan IP Railway diblokir. Detail: {str(e)}"
+                    )
 
                 # Allow extra time for dynamic content to fully render
                 await page.wait_for_timeout(5000)
