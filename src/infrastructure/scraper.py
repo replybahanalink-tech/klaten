@@ -64,14 +64,20 @@ class PlaywrightScraper(ScraperPort):
         and extracts all rows via JavaScript evaluation.
         """
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True)
+            browser = await pw.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+            )
             try:
-                page = await browser.new_page()
-                await page.goto(url, wait_until="networkidle", timeout=30000)
-                await page.wait_for_selector("table", timeout=15000)
+                page = await browser.new_page(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    viewport={"width": 1280, "height": 720}
+                )
+                await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                await page.wait_for_selector("table", timeout=60000)
 
                 # Allow extra time for dynamic content to fully render
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(5000)
 
                 raw_data = await page.evaluate(self._EXTRACT_TABLE_JS)
 
